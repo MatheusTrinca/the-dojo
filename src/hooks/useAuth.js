@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { auth } from '../config/firebase';
+import { auth, storage } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthContext } from '../contexts/AuthContext';
 import {
   createUserWithEmailAndPassword,
@@ -15,7 +16,7 @@ export const useAuth = () => {
 
   const { dispatch } = useAuthContext();
 
-  const signup = async (email, password, displayName) => {
+  const signup = async (email, password, displayName, thumbnail) => {
     setError(null);
     setPending(true);
 
@@ -30,14 +31,22 @@ export const useAuth = () => {
         throw new Error('Could not complete signup');
       }
 
+      // Update Image Profile and Uploading to Storage
+      const uploadPath = `thumbnails/${userCredentials.user.uid}/${thumbnail.name}`;
+      const imgRef = ref(storage, uploadPath);
+      await uploadBytes(imgRef, thumbnail);
+      const imgURL = await getDownloadURL(imgRef);
+
       await updateProfile(auth.currentUser, {
         displayName,
+        photoURL: imgURL,
       });
 
       dispatch({ type: 'SIGNUP', payload: auth.currentUser });
 
       if (!cancelled) {
         setPending(false);
+        setError(false);
       }
     } catch (err) {
       if (!cancelled) {
