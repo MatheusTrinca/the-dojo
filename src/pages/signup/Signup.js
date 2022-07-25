@@ -74,7 +74,7 @@ const Signup = () => {
       </label>
       {thumbnailError && <div className="error">{thumbnailError}</div>}
       <button className="btn" disabled={pending}>
-        Sign Up
+        {!pending ? 'Sign Up' : 'Signing in...'}
       </button>
       {error && <div className="error">{error}</div>}
     </form>

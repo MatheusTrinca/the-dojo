@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
-import { auth, storage } from '../config/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthContext } from '../contexts/AuthContext';
+import { auth, storage, db } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   createUserWithEmailAndPassword,
   updateProfile,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 
 export const useAuth = () => {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(null);
   const [cancelled, setCancelled] = useState(false);
 
-  const { dispatch } = useAuthContext();
+  const { dispatch, user } = useAuthContext();
 
   const signup = async (email, password, displayName, thumbnail) => {
     setError(null);
@@ -38,6 +39,13 @@ export const useAuth = () => {
       const imgURL = await getDownloadURL(imgRef);
 
       await updateProfile(auth.currentUser, {
+        displayName,
+        photoURL: imgURL,
+      });
+
+      // Create a user document in Firestore
+      await setDoc(doc(db, 'users', userCredentials.user.uid), {
+        online: true,
         displayName,
         photoURL: imgURL,
       });
@@ -68,6 +76,10 @@ export const useAuth = () => {
       if (!userCredentials) {
         throw new Error('Incorrect email or password');
       }
+
+      await updateDoc(doc(db, 'users', userCredentials.user.uid), {
+        online: true,
+      });
       dispatch({ type: 'LOGIN', payload: userCredentials.user });
       if (!cancelled) {
         setPending(false);
@@ -80,14 +92,20 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
-    signOut(auth)
-      .then(() => {
-        dispatch({ type: 'LOGOUT' });
-      })
-      .catch(err => {
-        setError(err.message);
+  const logout = async () => {
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        online: false,
       });
+
+      await signOut(auth);
+      dispatch({ type: 'LOGOUT' });
+    } catch (err) {
+      if (!cancelled) {
+        setError(err.message);
+        setPending(false);
+      }
+    }
   };
 
   useEffect(() => {

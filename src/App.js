@@ -1,31 +1,25 @@
 import './App.css';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
+import Routes from './navigation/Routes';
+import { useAuthContext } from './contexts/AuthContext';
 
-// Pages
-import Create from './pages/create/Create';
-import Dashboard from './pages/dashboard/Dashboard';
-import Login from './pages/login/Login';
-import Project from './pages/project/Project';
-import Signup from './pages/signup/Signup';
+// Components
 import Navbar from './components/navbar/Navbar';
 import Sidebar from './components/sidebar/Sidebar';
+import OnlineUsers from './components/onlineUsers/OnlineUsers';
 
 function App() {
+  const { user } = useAuthContext();
+
   return (
     <div className="App">
       <BrowserRouter>
-        <Sidebar />
+        {user && <Sidebar />}
         <div className="container">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/create" element={<Create />} />
-            <Route path="/projects/:id" element={<Project />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
+          <Routes />
         </div>
+        {user && <OnlineUsers />}
       </BrowserRouter>
     </div>
   );
