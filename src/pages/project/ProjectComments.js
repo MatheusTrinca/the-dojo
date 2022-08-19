@@ -1,13 +1,16 @@
 import { Timestamp } from 'firebase/firestore';
 import React, { useState } from 'react';
+import Avatar from '../../components/avatar/Avatar';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { useFirebase } from '../../hooks/useFirebase';
+import { formatDistanceToNow } from 'date-fns';
 
-const ProjectComments = () => {
+const ProjectComments = ({ project }) => {
   const [newComment, setNewComment] = useState('');
-
+  const { updateDocument, response } = useFirebase('projects');
   const { user } = useAuthContext();
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     const commentToAdd = {
       displayName: user.displayName,
@@ -16,12 +19,38 @@ const ProjectComments = () => {
       createdAt: Timestamp.fromDate(new Date()),
       id: Math.random(),
     };
-    console.log(commentToAdd);
+    await updateDocument(project.id, {
+      comments: [...project.comments, commentToAdd],
+    });
+    if (!response.error) {
+      setNewComment('');
+    }
   };
 
   return (
     <div className="project-comments">
       <h4>Project Comments</h4>
+      <ul>
+        {project.comments.length > 0 &&
+          project.comments.map(comment => (
+            <li key={comment.id}>
+              <div className="comment-author">
+                <Avatar src={comment.photoURL} />
+                <p>{comment.displayName}</p>
+              </div>
+              <div className="comment-date">
+                <p>
+                  {formatDistanceToNow(comment.createdAt.toDate(), {
+                    addSuffix: true,
+                  })}
+                </p>
+              </div>
+              <div className="comment-content">
+                <p>{comment.content}</p>
+              </div>
+            </li>
+          ))}
+      </ul>
       <form onSubmit={handleSubmit} className="add-comment">
         <label>
           <span>Add new comment:</span>

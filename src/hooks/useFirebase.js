@@ -6,6 +6,7 @@ import {
   Timestamp,
   doc,
   deleteDoc,
+  updateDoc,
 } from 'firebase/firestore';
 
 const firebaseReducer = (state, action) => {
@@ -37,6 +38,13 @@ const firebaseReducer = (state, action) => {
         isPending: false,
         error: null,
         success: true,
+      };
+    case 'UPDATED_DOCUMENT':
+      return {
+        isPending: false,
+        document: action.payload,
+        success: true,
+        error: null,
       };
     default:
       return state;
@@ -83,10 +91,25 @@ export const useFirebase = c => {
   const deleteDocument = async id => {
     dispatchIfNotCancelled({ type: 'IS_PENDING' });
     try {
-      await deleteDoc(doc(db, 'transactions', id));
+      await deleteDoc(doc(db, c, id));
       dispatchIfNotCancelled({ type: 'DELETE_DOCUMENT' });
     } catch (err) {
       dispatchIfNotCancelled({ type: 'ERROR', payload: err.message });
+    }
+  };
+
+  const updateDocument = async (id, updates) => {
+    dispatch({ type: 'IS_PENDING' });
+    try {
+      const updatedDocument = await updateDoc(doc(db, c, id), { ...updates });
+      dispatchIfNotCancelled({
+        type: 'UPDATED_DOCUMENT',
+        payload: updatedDocument,
+      });
+      return updatedDocument;
+    } catch (err) {
+      dispatchIfNotCancelled({ type: 'ERROR', payload: err.message });
+      return null;
     }
   };
 
@@ -94,5 +117,5 @@ export const useFirebase = c => {
     return () => setCancelled(true);
   }, []);
 
-  return { response, addDocument, deleteDocument };
+  return { response, addDocument, deleteDocument, updateDocument };
 };

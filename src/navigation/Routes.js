@@ -4,12 +4,9 @@ import AppRoutes from './App.routes';
 import AuthRoutes from './Auth.routes';
 
 const Routes = () => {
-  const { user, authIsReady } = useAuthContext();
+  const { user } = useAuthContext();
 
-  if (authIsReady) {
-    return user ? <AppRoutes /> : <AuthRoutes />;
-  }
-  return null;
+  return user ? <AppRoutes /> : <AuthRoutes />;
 };
 
 export default Routes;
